@@ -161,17 +161,25 @@ local function DeliverAnim()
 end
 
 function TakeAnim()
-    local ped = PlayerPedId()
-    QBCore.Functions.Progressbar("bag_pickup", Lang:t("info.picking_bag"), math.random(3000, 5000), false, true, {
-        disableMovement = true,
-        disableCarMovement = true,
-        disableMouse = false,
-        disableCombat = true,
-    }, {
-        animDict = "anim@amb@clubhouse@tutorial@bkr_tut_ig3@",
-        anim = "machinic_loop_mechandplayer",
-        flags = 16,
-    }, {}, {}, function()
+    local ped = cache.ped
+    if lib.progressBar({
+        duration = math.random(3000, 5000),
+        label = Lang:t("info.picking_bag"),
+        useWhileDead = false,
+        allowRagdoll = false,
+        allowCuff = false,
+        disable = {
+            move = true,
+            car = true,
+            combat = true,
+            mouse = false,
+        },
+        animation = {
+            dict = "anim@amb@clubhouse@tutorial@bkr_tut_ig3@",
+            clip = "machinic_loop_mechandplayer",
+            flags = 16,
+        },
+    }) then 
         LoadAnimation('missfbi4prepp1')
         TaskPlayAnim(ped, 'missfbi4prepp1', '_bag_walk_garbage_man', 6.0, -6.0, -1, 49, 0, 0, 0, 0)
         garbageObject = CreateObject(`prop_cs_rub_binbag_01`, 0, 0, 0, true, true, true)
@@ -188,10 +196,10 @@ function TakeAnim()
             distance = 2.0
             })
         end
-    end, function()
-        StopAnimTask(PlayerPedId(), "anim@amb@clubhouse@tutorial@bkr_tut_ig3@", "machinic_loop_mechandplayer", 1.0)
-        QBCore.Functions.Notify(Lang:t("error.cancled"), "error")
-    end)
+    end
+    
+        -- StopAnimTask(PlayerPedId(), "anim@amb@clubhouse@tutorial@bkr_tut_ig3@", "machinic_loop_mechandplayer", 1.0)
+        -- QBCore.Functions.Notify(Lang:t("error.cancled"), "error")
 end
 
 local function RunWorkLoop()
@@ -495,14 +503,41 @@ RegisterNetEvent('qb-garbagejob:client:RequestPaycheck', function()
     TriggerServerEvent('garbagejob:server:PayShift')
 end)
 
+lib.registerContext({
+    id = 'qb-garbage_main',
+    title = Lang:t("menu.header"),
+    options = {
+        {
+            title = Lang:t("menu.collect"),
+            description = Lang:t("menu.return_collect"),
+            event = 'qb-garbagejob:client:RequestPaycheck',
+        }
+    }
+})
+lib.registerContext({
+    id = 'qb-garbage_main_with_route',
+    title = Lang:t("menu.header"),
+    options = {
+        {
+            title = Lang:t("menu.collect"),
+            description = Lang:t("menu.return_collect"),
+            event = 'qb-garbagejob:client:RequestPaycheck',
+        },
+        {
+            title = Lang:t("menu.route"),
+            description = Lang:t("menu.request_route"),
+            event = 'qb-garbagejob:client:RequestRoute',
+        }
+    }
+})
+
+
 RegisterNetEvent('qb-garbagejob:client:MainMenu', function()
-    local MainMenu = {}
-    MainMenu[#MainMenu+1] = {isMenuHeader = true,header = Lang:t("menu.header")}
-    MainMenu[#MainMenu+1] = { header = Lang:t("menu.collect"),txt = Lang:t("menu.return_collect"),params = { event = 'qb-garbagejob:client:RequestPaycheck',}}
     if not garbageVehicle or finished then
-        MainMenu[#MainMenu+1] = { header = Lang:t("menu.route"), txt = Lang:t("menu.request_route"), params = { event = 'qb-garbagejob:client:RequestRoute',}}
+        lib.showContext('qb-garbage_main_with_route')
+    else
+        lib.showContext('qb-garbage_main')
     end
-    exports['qb-menu']:openMenu(MainMenu)
 end)
 
 RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
